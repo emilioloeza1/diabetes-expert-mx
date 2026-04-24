@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiabDetect MX — Sistema Experto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Variables ─────────────────────────────────────── */
+    :root {
+      --bg:          #0a0f1a;
+      --surface:     #111827;
+      --surface2:    #1a2235;
+      --border:      rgba(255,255,255,0.07);
+      --accent:      #00c9a7;
+      --accent2:     #0ea5e9;
+      --red:         #ff4d6d;
+      --orange:      #fb923c;
+      --yellow:      #fbbf24;
+      --green:       #34d399;
+      --text:        #f0f4ff;
+      --muted:       #6b7a9a;
+      --font-head:   'Syne', sans-serif;
+      --font-body:   'DM Sans', sans-serif;
+      --radius:      14px;
+      --transition:  0.25s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ─── Reset ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Background mesh ───────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 10% 0%, rgba(0,201,167,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 90% 100%, rgba(14,165,233,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Layout ─────────────────────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── Header ─────────────────────────────────────────── */
+    header {
+      padding: 40px 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+      animation: fadeDown 0.6s ease both;
+    }
+    .logo-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 30px rgba(0,201,167,0.3);
+      flex-shrink: 0;
+    }
+    .logo-text h1 {
+      font-family: var(--font-head);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .logo-text h1 span { color: var(--accent); }
+    .logo-text p {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .header-badge {
+      margin-left: auto;
+      background: rgba(0,201,167,0.1);
+      border: 1px solid rgba(0,201,167,0.2);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 50px;
+    }
+
+    /* ─── Grid principal ─────────────────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 800px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .panel-resultado { order: -1; }
+    }
+
+    /* ─── Card base ──────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .card + .card { margin-top: 20px; }
+    .card-title {
+      font-family: var(--font-head);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ─── Campos del formulario ──────────────────────────── */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+    label.field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,201,167,0.1);
+    }
+    select option { background: var(--surface2); }
+
+    /* ─── Grillas de síntomas / factores ─────────────────── */
+    .sintomas-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 500px) { .sintomas-grid { grid-template-columns: 1fr; } }
+
+    .check-item {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      user-select: none;
+    }
+    .check-item:hover { border-color: rgba(0,201,167,0.35); background: rgba(0,201,167,0.04); }
+    .check-item.selected {
+      border-color: var(--accent);
+      background: rgba(0,201,167,0.08);
+    }
+    .check-item input { display: none; }
+    .check-box {
+      width: 18px; height: 18px;
+      border-radius: 5px;
+      border: 2px solid var(--border);
+      background: transparent;
+      flex-shrink: 0;
+      margin-top: 1px;
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .check-item.selected .check-box {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .check-box::after {
+      content: '✓';
+      font-size: 11px;
+      color: #000;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .check-item.selected .check-box::after { opacity: 1; }
+    .check-label { font-size: 13px; line-height: 1.3; }
+    .check-badge {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .badge-cardinal { background: rgba(255,77,109,0.15); color: var(--red); }
+    .badge-secundario { background: rgba(251,146,60,0.15); color: var(--orange); }
+    .badge-alerta { background: rgba(251,191,36,0.15); color: var(--yellow); }
+
+    /* ─── Separadores de categoría ───────────────────────── */
+    .cat-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 18px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cat-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── Botón principal ────────────────────────────────── */
+    .btn-evaluar {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 12px;
+      color: #000;
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-top: 8px;
+      box-shadow: 0 4px 20px rgba(0,201,167,0.25);
+    }
+    .btn-evaluar:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,201,167,0.35); }
+    .btn-evaluar:active { transform: translateY(0); }
+    .btn-evaluar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ─── Panel de resultado ─────────────────────────────── */
+    .panel-resultado {
+      position: sticky;
+      top: 24px;
+    }
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: fadeUp 0.5s ease both;
+      animation-delay: 0.1s;
+    }
+    .result-header {
+      padding: 24px 28px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .result-level {
+      font-family: var(--font-head);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .result-level.red    { color: var(--red); }
+    .result-level.orange { color: var(--orange); }
+    .result-level.yellow { color: var(--yellow); }
+    .result-level.green  { color: var(--green); }
+    .result-score {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .result-score span { color: var(--text); font-weight: 600; }
+
+    .result-body { padding: 24px 28px; }
+    .result-mensaje {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .result-acciones {
+      margin-bottom: 20px;
+    }
+    .accion-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .accion-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .accion-item:last-child { border-bottom: none; }
+    .accion-num {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: rgba(0,201,167,0.15);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .result-advertencia {
+      background: rgba(255,255,255,0.04);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Estado inicial vacío */
+    .result-empty {
+      padding: 48px 28px;
+      text-align: center;
+    }
+    .result-empty .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+    .result-empty p { color: var(--muted); font-size: 14px; }
+
+    /* ─── Tags de síntomas detectados ───────────────────── */
+    .tags-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .tag {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(0,201,167,0.1);
+      border: 1px solid rgba(0,201,167,0.2);
+      color: var(--accent);
+    }
+
+    /* ─── Reglas activadas ───────────────────────────────── */
+    .reglas-box {
+      margin-top: 14px;
+      background: rgba(14,165,233,0.06);
+      border: 1px solid rgba(14,165,233,0.15);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .reglas-title { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+    .regla-item { font-size: 12px; color: var(--muted); padding: 3px 0; }
+    .regla-item::before { content: '⚡ '; }
+
+    /* ─── Historial ──────────────────────────────────────── */
+    .historial-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .historial-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .historial-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .historial-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .nivel-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .nivel-alto    { background: rgba(255,77,109,0.15); color: var(--red); }
+    .nivel-moderado{ background: rgba(251,146,60,0.15); color: var(--orange); }
+    .nivel-bajo    { background: rgba(251,191,36,0.15); color: var(--yellow); }
+    .nivel-sin_riesgo { background: rgba(52,211,153,0.15); color: var(--green); }
+
+    /* ─── Loading spinner ────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .loading .spinner { display: block; }
+    .loading .btn-text { display: none; }
+
+    /* ─── Tabs ───────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--surface2);
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .tab {
+      flex: 1;
+      padding: 9px 14px;
+      font-family: var(--font-head);
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: all var(--transition);
+    }
+    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Animaciones ────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .pulse { animation: pulse 1.5s ease infinite; }
+
+    /* ─── Info enfermedades ──────────────────────────────── */
+    .enfermedad-item {
+      display: flex; gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .enfermedad-item:last-child { border-bottom: none; }
+    .enf-rank {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 13px;
+      color: #000;
+      flex-shrink: 0;
+    }
+    .enf-info h3 { font-family: var(--font-head); font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .enf-info p { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .enf-stats { display: flex; gap: 14px; margin-top: 6px; }
+    .enf-stat { font-size: 11px; }
+    .enf-stat span { color: var(--accent); font-weight: 600; }
+
+    /* ─── Footer ─────────────────────────────────────────── */
+    footer {
+      margin-top: 60px;
+      padding: 28px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      animation: fadeUp 0.5s ease 0.4s both;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header>
+    <div class="logo-icon">🩺</div>
+    <div class="logo-text">
+      <h1>Diab<span>Detect</span> MX</h1>
+      <p>Sistema Experto · Detección Temprana</p>
+    </div>
+    <div class="header-badge">Beta v1.0</div>
+  </header>
+
+  <!-- ── Tabs ───────────────────────────────────────────── -->
+  <div class="tabs" style="animation: fadeUp 0.4s ease both;">
+    <button class="tab active" onclick="switchTab('evaluacion')">🔍 Evaluación</button>
+    <button class="tab" onclick="switchTab('historial')">📋 Historial</button>
+    <button class="tab" onclick="switchTab('info')">ℹ️ Información</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 1: Evaluación
+  ══════════════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-evaluacion">
+    <div class="main-grid">
+
+      <!-- Columna izquierda: Formulario -->
+      <div>
+        <!-- Datos del paciente -->
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Datos del Paciente (Opcional)</div>
+          <div class="form-row">
+            <div>
+              <label class="field-label">Nombre</label>
+              <input type="text" id="nombre" placeholder="Anónimo" />
+            </div>
+            <div>
+              <label class="field-label">Edad</label>
+              <input type="number" id="edad" placeholder="Ej: 45" min="1" max="120" />
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Sexo</label>
+            <select id="sexo">
+              <option value="">Prefiero no indicar</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+              <option value="O">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Síntomas -->
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Síntomas Presentes</div>
+
+          <div class="cat-header">🔴 Cardinales (peso alto)</div>
+          <div class="sintomas-grid">
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="poliuria" />
+              <div class="check-box"></div>
+              <span class="check-label">Orinar frecuentemente (>8 veces/día)</span>
+              <span class="check-badge badge-cardinal">×3</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="polidipsia" />
+              <div class="check-box"></div>
+              <span class="check-label">Sed intensa y constante</span>
+              <span class="check-badge badge-cardinal">×3</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="polifagia" />
+              <div class="check-box"></div>
+              <span class="check-label">Hambre excesiva y constante</span>
+              <span class="check-badge badge-cardinal">×3</span>
+            </label>
+          </div>
+
+          <div class="cat-header">🟠 Secundarios (peso medio)</div>
+          <div class="sintomas-grid">
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="perdida_peso" />
+              <div class="check-box"></div>
+              <span class="check-label">Pérdida de peso sin causa</span>
+              <span class="check-badge badge-secundario">×2</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="fatiga" />
+              <div class="check-box"></div>
+              <span class="check-label">Fatiga o cansancio extremo</span>
+              <span class="check-badge badge-secundario">×2</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="vision_borrosa" />
+              <div class="check-box"></div>
+              <span class="check-label">Visión borrosa o borrosa</span>
+              <span class="check-badge badge-secundario">×2</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="heridas_lentas" />
+              <div class="check-box"></div>
+              <span class="check-label">Heridas que sanan lentamente</span>
+              <span class="check-badge badge-secundario">×2</span>
+            </label>
+          </div>
+
+          <div class="cat-header">🟡 Alerta (peso leve)</div>
+          <div class="sintomas-grid">
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="hormigueo" />
+              <div class="check-box"></div>
+              <span class="check-label">Hormigueo en manos/pies</span>
+              <span class="check-badge badge-alerta">×1</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="infecciones_frecuentes" />
+              <div class="check-box"></div>
+              <span class="check-label">Infecciones frecuentes</span>
+              <span class="check-badge badge-alerta">×1</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="piel_oscura" />
+              <div class="check-box"></div>
+              <span class="check-label">Manchas oscuras en cuello/axilas</span>
+              <span class="check-badge badge-alerta">×1</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this)">
+              <input type="checkbox" value="boca_seca" />
+              <div class="check-box"></div>
+              <span class="check-label">Boca seca persistente</span>
+              <span class="check-badge badge-alerta">×1</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Factores de riesgo -->
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>Factores de Riesgo</div>
+          <div class="sintomas-grid">
+            <label class="check-item" onclick="toggleCheck(this, 'factor')">
+              <input type="checkbox" class="factor" value="edad_mayor_45" />
+              <div class="check-box"></div>
+              <span class="check-label">Mayor de 45 años</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this, 'factor')">
+              <input type="checkbox" class="factor" value="sobrepeso_obesidad" />
+              <div class="check-box"></div>
+              <span class="check-label">Sobrepeso u obesidad (IMC ≥ 25)</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this, 'factor')">
+              <input type="checkbox" class="factor" value="antecedentes_familiares" />
+              <div class="check-box"></div>
+              <span class="check-label">Familiar directo con diabetes</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this, 'factor')">
+              <input type="checkbox" class="factor" value="sedentarismo" />
+              <div class="check-box"></div>
+              <span class="check-label">Poco ejercicio (<3 días/semana)</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this, 'factor')">
+              <input type="checkbox" class="factor" value="hipertension" />
+              <div class="check-box"></div>
+              <span class="check-label">Hipertensión diagnosticada</span>
+            </label>
+            <label class="check-item" onclick="toggleCheck(this, 'factor')">
+              <input type="checkbox" class="factor" value="colesterol_alto" />
+              <div class="check-box"></div>
+              <span class="check-label">Colesterol o triglicéridos altos</span>
+            </label>
+          </div>
+
+          <button class="btn-evaluar" id="btnEvaluar" onclick="evaluar()">
+            <div class="spinner"></div>
+            <span class="btn-text">⚡ Evaluar Síntomas</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Columna derecha: Resultado -->
+      <div class="panel-resultado">
+        <div class="result-card" id="resultCard">
+          <div class="result-empty">
+            <div class="empty-icon">🔬</div>
+            <p>Selecciona los síntomas presentes<br/>y presiona <strong>Evaluar</strong></p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 2: Historial
+  ══════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-historial">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Últimas Evaluaciones</div>
+      <div id="historialContent">
+        <p style="color: var(--muted); font-size: 13px;">Cargando historial...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 3: Información
+  ══════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-info">
+    <div class="card" style="animation-delay:0.05s">
+      <div class="card-title"><span class="dot"></span>Top 5 Causas de Muerte en México</div>
+      <div id="enfermedadesContent">
+        <p style="color:var(--muted);font-size:13px;">Cargando...</p>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.1s">
+      <div class="card-title"><span class="dot"></span>¿Cómo funciona este sistema?</div>
+      <p style="font-size:14px; line-height:1.8; color: var(--muted); margin-bottom: 14px;">
+        El sistema utiliza un <strong style="color:var(--text)">motor de inferencia basado en reglas if-then</strong>. Cada síntoma tiene un peso diagnóstico (1–3). El motor suma estos pesos y aplica modificadores si hay factores de riesgo presentes.
+      </p>
+      <p style="font-size:14px; line-height:1.8; color: var(--muted); margin-bottom: 14px;">
+        Adicionalmente, evalúa <strong style="color:var(--text)">reglas especiales</strong>: si están presentes los 3 síntomas cardinales (triada: poliuria + polidipsia + polifagia), el nivel mínimo se eleva a <em>Moderado</em>. Si existe combinación de síntomas de progresión con cardinales, se añaden puntos extra.
+      </p>
+      <p style="font-size:14px; line-height:1.8; color: var(--muted);">
+        <strong style="color:var(--accent)">Limitaciones:</strong> Este sistema NO reemplaza una consulta médica. No toma en cuenta análisis clínicos (glucosa, HbA1c), historial completo, ni medicamentos. Es una herramienta de orientación inicial.
+      </p>
+    </div>
+
+    <div class="card" style="animation-delay:0.15s">
+      <div class="card-title"><span class="dot"></span>Endpoints de la API</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--accent);font-family:monospace;">POST /api/evaluar</td>
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid var(--border);color:var(--muted);">Evalúa síntomas y devuelve diagnóstico</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--accent);font-family:monospace;">GET /api/sintomas</td>
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid var(--border);color:var(--muted);">Catálogo completo de síntomas</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--accent);font-family:monospace;">GET /api/factores</td>
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid var(--border);color:var(--muted);">Factores de riesgo disponibles</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--accent);font-family:monospace;">GET /api/historial</td>
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid var(--border);color:var(--muted);">Últimas 20 evaluaciones</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--accent);font-family:monospace;">GET /api/estadisticas</td>
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid var(--border);color:var(--muted);">Estadísticas y síntomas frecuentes</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:var(--accent);font-family:monospace;">GET /api/health</td>
+          <td style="padding:8px 0 8px 16px;color:var(--muted);">Estado del sistema y BD</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  <div class="container">
+    <p>DiabDetect MX — Sistema Experto de Detección Temprana &middot; Solo con fines educativos</p>
+    <p style="margin-top:6px;">Fuentes: INEGI 2022, IMSS, SSa, NOM-015-SSA2-2010, OPS/OMS</p>
+  </div>
+</footer>
+
+<script>
+/* ─── Utilidades ────────────────────────────────────── */
+function toggleCheck(el, type) {
+  // Previene el comportamiento nativo del label para evitar el doble toggle
+  event.preventDefault();
+  
+  el.classList.toggle('selected');
+  const cb = el.querySelector('input[type="checkbox"]');
+  if (cb) cb.checked = !cb.checked;
+}
+function getSintomas() {
+  return [...document.querySelectorAll('.check-item.selected input:not(.factor)')]
+    .map(i => i.value);
+}
+function getFactores() {
+  return [...document.querySelectorAll('.check-item.selected input.factor')]
+    .map(i => i.value);
+}
+
+/* ─── Tabs ──────────────────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['evaluacion','historial','info'];
+    t.classList.toggle('active', ids[i] === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'historial') loadHistorial();
+  if (tab === 'info') loadEnfermedades();
+}
+
+/* ─── Evaluar ───────────────────────────────────────── */
+async function evaluar() {
+  const btn = document.getElementById('btnEvaluar');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  const payload = {
+    sintomas: getSintomas(),
+    factores: getFactores(),
+    paciente: {
+      nombre: document.getElementById('nombre').value || null,
+      edad:   parseInt(document.getElementById('edad').value) || null,
+      sexo:   document.getElementById('sexo').value || null,
+    }
+  };
+
+  try {
+    const res = await fetch('/api/evaluar', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) renderResultado(data);
+    else renderError(data.error || 'Error desconocido');
+  } catch(e) {
+    renderError('No se pudo conectar con el servidor.');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+/* ─── Renderizar resultado ─────────────────────────── */
+function renderResultado(d) {
+  const colorMap = {
+    alto:'red', moderado:'orange', bajo:'yellow', sin_riesgo:'green'
+  };
+  const color = colorMap[d.nivel_riesgo] || 'green';
+
+  const accionesHTML = (d.acciones||[]).map((a,i) => `
+    <div class="accion-item">
+      <div class="accion-num">${i+1}</div>
+      <span>${a}</span>
+    </div>
+  `).join('');
+
+  const tagsHTML = (d.sintomas_detectados||[]).map(s =>
+    `<span class="tag">${s.nombre.split('(')[0].trim()}</span>`
+  ).join('');
+
+  const reglasHTML = d.reglas_activadas?.length ? `
+    <div class="reglas-box">
+      <div class="reglas-title">⚡ Reglas Activadas</div>
+      ${d.reglas_activadas.map(r => `<div class="regla-item">${r}</div>`).join('')}
+    </div>` : '';
+
+  const scoreColor = { alto: 'var(--red)', moderado: 'var(--orange)', bajo: 'var(--yellow)', sin_riesgo: 'var(--green)' }[d.nivel_riesgo];
+
+  document.getElementById('resultCard').innerHTML = `
+    <div class="result-header">
+      <div class="result-level ${color}">${d.nivel_display}</div>
+      <div class="result-score">
+        Puntuación: <span style="color:${scoreColor}">${d.puntuacion_ajustada}</span>
+        &nbsp;·&nbsp; Síntomas: <span>${d.total_sintomas}</span>
+        ${d.evaluacion_id ? `&nbsp;·&nbsp; ID: <span>#${d.evaluacion_id}</span>` : ''}
+      </div>
+      ${tagsHTML ? `<div class="tags-row">${tagsHTML}</div>` : ''}
+    </div>
+    <div class="result-body">
+      <p class="result-mensaje">${d.mensaje}</p>
+      <div class="result-acciones">
+        <div class="accion-label">Recomendaciones</div>
+        ${accionesHTML}
+      </div>
+      <div class="result-advertencia">${d.advertencia}</div>
+      ${reglasHTML}
+    </div>
+  `;
+}
+
+function renderError(msg) {
+  document.getElementById('resultCard').innerHTML = `
+    <div class="result-empty">
+      <div class="empty-icon">⚠️</div>
+      <p style="color:var(--red)">${msg}</p>
+    </div>`;
+}
+
+/* ─── Historial ─────────────────────────────────────── */
+async function loadHistorial() {
+  try {
+    const res = await fetch('/api/historial');
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      document.getElementById('historialContent').innerHTML =
+        `<p style="color:var(--muted);font-size:13px;">⚠️ ${data.error || 'Error al cargar historial'}</p>`;
+      return;
+    }
+    if (!data.evaluaciones.length) {
+      document.getElementById('historialContent').innerHTML =
+        `<p style="color:var(--muted);font-size:13px;">No hay evaluaciones registradas todavía.</p>`;
+      return;
+    }
+    const rows = data.evaluaciones.map(e => `
+      <tr>
+        <td>#${e.id}</td>
+        <td>${e.nombre_paciente || 'Anónimo'}</td>
+        <td>${e.edad || '—'}</td>
+        <td>${(e.sintomas_reportados||[]).length} síntomas</td>
+        <td><span class="nivel-pill nivel-${e.nivel_riesgo}">${e.nivel_display||e.nivel_riesgo}</span></td>
+        <td style="color:var(--muted)">${new Date(e.creado_en).toLocaleDateString('es-MX')}</td>
+      </tr>
+    `).join('');
+    document.getElementById('historialContent').innerHTML = `
+      <table class="historial-table">
+        <thead><tr>
+          <th>ID</th><th>Paciente</th><th>Edad</th>
+          <th>Síntomas</th><th>Nivel</th><th>Fecha</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch(e) {
+    document.getElementById('historialContent').innerHTML =
+      `<p style="color:var(--muted);font-size:13px;">No se pudo cargar el historial.</p>`;
+  }
+}
+
+/* ─── Enfermedades ──────────────────────────────────── */
+async function loadEnfermedades() {
+  try {
+    const res = await fetch('/api/enfermedades');
+    const data = await res.json();
+    const enfs = data.enfermedades_mexico;
+    const html = Object.entries(enfs).map(([rank, e]) => `
+      <div class="enfermedad-item">
+        <div class="enf-rank">${rank}</div>
+        <div class="enf-info">
+          <h3>${e.nombre}</h3>
+          <p>${e.descripcion}</p>
+          <div class="enf-stats">
+            <div class="enf-stat">Muertes: <span>${e.muertes_anuales}</span></div>
+            <div class="enf-stat">Prevalencia: <span>${e.prevalencia_mexico}</span></div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('enfermedadesContent').innerHTML = html;
+  } catch(e) {
+    document.getElementById('enfermedadesContent').innerHTML =
+      `<p style="color:var(--muted)">No se pudieron cargar los datos.</p>`;
+  }
+}
+
+/* ─── Animación de entrada ──────────────────────────── */
+document.querySelectorAll('.card').forEach((c,i) => {
+  c.style.animationDelay = `${i * 0.07}s`;
+});
+</script>
+</body>
+</html>
